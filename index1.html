@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S.O.G.V. - Sistema Operativo Gestione Vigilanza</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        tech: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                            glow: '#00f2fe'
+                        },
+                        darknavy: {
+                            800: '#1e293b',
+                            850: '#111827',
+                            900: '#0f172a',
+                            950: '#080d1a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- jsPDF for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #0b0f19;
+            color: #f1f5f9;
+        }
+        .tech-gradient {
+            background: linear-gradient(135deg, #0284c7 0%, #00f2fe 100%);
+        }
+        .tech-glow {
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.35);
+        }
+        .emerald-glow {
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.25);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0ea5e9;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between bg-slate-950 text-slate-100">
+
+    <!-- Header -->
+    <header class="bg-darknavy-900 border-b border-slate-800 sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-xl tech-gradient flex items-center justify-center text-slate-950 text-xl font-bold mr-3 shadow-lg tech-glow">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-extrabold text-white tracking-wider flex items-center gap-2">
+                            S.O.G.V.
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-tech-500/20 text-tech-400 font-semibold border border-tech-500/30">v3.0 TECH</span>
+                        </h1>
+                        <p class="text-xs text-slate-400 font-medium">Sistema Operativo Gestione Vigilanza</p>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs Desktop -->
+                <div class="hidden md:flex space-x-2 items-center">
+                    <button onclick="switchTab('servizio')" id="tab-btn-servizio" class="nav-tab px-4 py-2 text-sm font-semibold rounded-lg flex items-center gap-2 transition-all bg-tech-600 text-white shadow-sm tech-glow">
+                        <i class="fa-solid fa-clipboard-check"></i> Registro Servizio
+                    </button>
+                    <button onclick="switchTab('obiettivi')" id="tab-btn-obiettivi" class="nav-tab px-4 py-2 text-sm font-semibold rounded-lg flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800 transition-all">
+                        <i class="fa-solid fa-building-shield"></i> Anagrafica Obiettivi
+                    </button>
+                    <button onclick="switchTab('checklist')" id="tab-btn-checklist" class="nav-tab px-4 py-2 text-sm font-semibold rounded-lg flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800 transition-all">
+                        <i class="fa-solid fa-car"></i> Checklist Mezzo
+                    </button>
+                    <button onclick="switchTab('report')" id="tab-btn-report" class="nav-tab px-4 py-2 text-sm font-semibold rounded-lg flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800 transition-all">
+                        <i class="fa-solid fa-chart-pie"></i> Report & Export
+                    </button>
+                </div>
+
+                <!-- Turno Status -->
+                <div class="flex items-center gap-3">
+                    <div id="turno-status-badge" class="hidden sm:flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 emerald-glow">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse mr-2"></span> Turno Operativo
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation bar -->
+        <div class="md:hidden flex justify-around bg-darknavy-950 text-slate-400 text-xs py-2 border-t border-slate-800">
+            <button onclick="switchTab('servizio')" id="mobile-btn-servizio" class="flex flex-col items-center py-1 px-3 text-tech-400 font-bold">
+                <i class="fa-solid fa-clipboard-check text-base mb-0.5"></i> Servizio
+            </button>
+            <button onclick="switchTab('obiettivi')" id="mobile-btn-obiettivi" class="flex flex-col items-center py-1 px-3 text-slate-400 font-medium">
+                <i class="fa-solid fa-building-shield text-base mb-0.5"></i> Obiettivi
+            </button>
+            <button onclick="switchTab('checklist')" id="mobile-btn-checklist" class="flex flex-col items-center py-1 px-3 text-slate-400 font-medium">
+                <i class="fa-solid fa-car text-base mb-0.5"></i> Mezzo
+            </button>
+            <button onclick="switchTab('report')" id="mobile-btn-report" class="flex flex-col items-center py-1 px-3 text-slate-400 font-medium">
+                <i class="fa-solid fa-chart-pie text-base mb-0.5"></i> Report
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full">
+
+        <!-- SECTION 1: SERVIZIO ISPEZIONE -->
+        <section id="section-servizio" class="space-y-6">
+            <!-- Turn Summary Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-darknavy-900 p-4 rounded-xl border border-slate-800 shadow-md flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Unità Operativa</p>
+                        <p id="card-pattuglia" class="text-base font-bold text-white">Pattuglia Alfa 01</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-tech-500/10 text-tech-400 flex items-center justify-center text-lg border border-tech-500/20">
+                        <i class="fa-solid fa-radio"></i>
+                    </div>
+                </div>
+
+                <div class="bg-darknavy-900 p-4 rounded-xl border border-slate-800 shadow-md flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Operatore / Guardia</p>
+                        <p id="card-guardia" class="text-base font-bold text-white">G.P.G. M. Rossi</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-tech-500/10 text-tech-400 flex items-center justify-center text-lg border border-tech-500/20">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                </div>
+
+                <div class="bg-darknavy-900 p-4 rounded-xl border border-slate-800 shadow-md flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Passaggi Svolti</p>
+                        <p id="card-tot-ispezioni" class="text-2xl font-black text-emerald-400">0</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg border border-emerald-500/20">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                </div>
+
+                <div class="bg-darknavy-900 p-4 rounded-xl border border-slate-800 shadow-md flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Anomalie / Criticità</p>
+                        <p id="card-tot-anomalie" class="text-2xl font-black text-rose-500">0</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-rose-500/10 text-rose-500 flex items-center justify-center text-lg border border-rose-500/20">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Stato Passaggi Obiettivi (Linea Verde) -->
+            <div class="bg-darknavy-900 rounded-2xl border border-slate-800 p-5 shadow-lg">
+                <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-emerald-400"></i> Stato Avanzamento Passaggi Turno
+                    </h3>
+                    <span id="passaggi-totali-badge" class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold px-3 py-1 rounded-full">0/0 Svolti</span>
+                </div>
+                <div id="grid-passaggi-obiettivi" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <!-- Popolato dinamicamente -->
+                </div>
+            </div>
+
+            <!-- Form Registrazione Nuova Ispezione -->
+            <div class="bg-darknavy-900 rounded-2xl border border-slate-800 p-6 shadow-xl border-t-2 border-t-tech-500">
+                <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-square-plus text-tech-400"></i> Registra Ispezione / Passaggio
+                    </h2>
+                    <span class="text-xs font-mono font-bold px-3 py-1 rounded-md bg-slate-800 text-tech-300 border border-slate-700" id="live-clock">00:00:00</span>
+                </div>
+
+                <form id="form-ispezione" onsubmit="salvaIspezione(event)" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Select Obiettivo -->
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                                Obiettivo / Cliente <span class="text-rose-500">*</span>
+                            </label>
+                            <select id="ispezione-obiettivo" required onchange="aggiornaDettagliObiettivoSelezionato()" class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-tech-500 focus:border-tech-500 font-medium">
+                                <option value="">-- Seleziona Obiettivo --</option>
+                            </select>
+                        </div>
+
+                        <!-- Ora Controllo -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Ora Ispezione</label>
+                            <div class="flex gap-2">
+                                <input type="time" id="ispezione-ora" required class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-tech-500">
+                                <button type="button" onclick="setOraAttuale()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-tech-400 border border-slate-700 font-bold rounded-lg text-xs transition">
+                                    Ora
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Box Info Rapida Obiettivo -->
+                    <div id="box-info-obiettivo" class="hidden p-3 bg-slate-950/70 rounded-lg border border-slate-800 text-xs text-slate-300">
+                        <div class="font-bold text-white flex items-center justify-between">
+                            <div>
+                                <i class="fa-solid fa-circle-info text-tech-400"></i> <span id="info-obj-nome"></span> - <span id="info-obj-indirizzo" class="font-normal text-slate-400"></span>
+                            </div>
+                            <span id="info-obj-passaggi-status" class="px-2 py-0.5 rounded font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"></span>
+                        </div>
+                        <p id="info-obj-note" class="mt-1 text-slate-400 italic"></p>
+                    </div>
+
+                    <!-- Esito Ispezione & Preset Rapidi -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Esito & Note Ispezione</label>
+                        <div class="flex flex-wrap gap-2 mb-2">
+                            <button type="button" onclick="setEsitoPreset('REGOLARE', 'Tutto regolare. Accessi chiusi, perimetro privo di anomalie.')" class="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+                                <i class="fa-solid fa-circle-check"></i> TUTTO REGOLARE
+                            </button>
+                            <button type="button" onclick="setEsitoPreset('ANOMALIA', 'Riscontrata anomalia: ')" class="px-3 py-1.5 bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+                                <i class="fa-solid fa-triangle-exclamation"></i> ANOMALIA / ALLARME
+                            </button>
+                            <button type="button" onclick="setEsitoPreset('CONTROLLO PERIMETRALE', 'Eseguito controllo perimetrale esterno. Accessi in sicurezza.')" class="px-3 py-1.5 bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+                                <i class="fa-solid fa-eye"></i> PERIMETRALE OK
+                            </button>
+                        </div>
+                        <textarea id="ispezione-note" rows="3" placeholder="Inserisci note operative o dettagli dell'ispezione..." class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-tech-500" required></textarea>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="flex justify-end pt-2">
+                        <button type="submit" class="w-full sm:w-auto px-6 py-2.5 tech-gradient hover:opacity-90 text-slate-950 font-extrabold text-sm rounded-xl shadow-lg transition flex items-center justify-center gap-2 tech-glow">
+                            <i class="fa-solid fa-floppy-disk"></i> REGISTRA PASSAGGIO
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tabella Registro Ispezioni -->
+            <div class="bg-darknavy-900 rounded-2xl border border-slate-800 shadow-md overflow-hidden">
+                <div class="p-4 bg-slate-900/50 border-b border-slate-800 flex justify-between items-center">
+                    <h3 class="font-bold text-white text-base flex items-center gap-2">
+                        <i class="fa-solid fa-list-ul text-tech-400"></i> Registro Ispezioni Turno Corrente
+                    </h3>
+                    <span id="ispezioni-count-badge" class="text-xs bg-slate-800 text-slate-300 font-bold px-3 py-1 rounded-full border border-slate-700">0 Registrazioni</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <thead class="bg-slate-950 text-slate-400 uppercase text-xs border-b border-slate-800">
+                            <tr>
+                                <th class="p-3.5 font-bold">Ora</th>
+                                <th class="p-3.5 font-bold">Obiettivo / Indirizzo</th>
+                                <th class="p-3.5 font-bold">Passaggio N°</th>
+                                <th class="p-3.5 font-bold">Esito & Dettagli</th>
+                                <th class="p-3.5 font-bold text-right">Azione</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-ispezioni" class="divide-y divide-slate-800">
+                            <!-- Popolato dinamicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: GESTIONE OBIETTIVI -->
+        <section id="section-obiettivi" class="space-y-6 hidden">
+            <div class="bg-darknavy-900 p-6 rounded-2xl border border-slate-800 shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-building-shield text-tech-400"></i> Gestione Anagrafica Obiettivi
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">Configura gli obiettivi di vigilanza e il numero di passaggi richiesti per ciascun turno.</p>
+                </div>
+            </div>
+
+            <!-- Form Aggiungi/Modifica Obiettivo -->
+            <div class="bg-darknavy-900 rounded-2xl border border-slate-800 p-6 shadow-md">
+                <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+                    <h3 id="form-obiettivi-title" class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-plus-circle text-tech-400"></i> Aggiungi Nuovo Obiettivo
+                    </h3>
+                    <button id="btn-annulla-modifica-obj" type="button" onclick="resetFormObiettivo()" class="hidden text-xs text-slate-400 hover:text-white underline font-semibold">
+                        Annulla Modifica
+                    </button>
+                </div>
+
+                <form id="form-obiettivo" onsubmit="salvaObiettivo(event)" class="space-y-4">
+                    <input type="hidden" id="obj-id-edit" value="">
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                                Nome Obiettivo / Cliente <span class="text-rose-500">*</span>
+                            </label>
+                            <input type="text" id="obj-nome" required placeholder="Es. Banca Sella - Filiale Centro" class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-tech-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                                Indirizzo <span class="text-rose-500">*</span>
+                            </label>
+                            <input type="text" id="obj-indirizzo" required placeholder="Es. Via Roma 45" class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-tech-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                                Passaggi Richiesti / Turno <span class="text-rose-500">*</span>
+                            </label>
+                            <input type="number" id="obj-passaggi" min="1" max="20" value="1" required class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-tech-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Note Operative / Codici Allarme</label>
+                        <textarea id="obj-note" rows="2" placeholder="Es. Codice tastiera perimetrale #1234..." class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-tech-500"></textarea>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-2">
+                        <button type="button" onclick="resetFormObiettivo()" class="px-4 py-2 border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-bold rounded-lg transition">
+                            Reset
+                        </button>
+                        <button id="btn-submit-obiettivo" type="submit" class="px-6 py-2 tech-gradient hover:opacity-90 text-slate-950 font-bold text-sm rounded-lg shadow transition flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i> AGGIUNGI OBIETTIVO
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Lista Obiettivi -->
+            <div class="bg-darknavy-900 rounded-2xl border border-slate-800 shadow-md overflow-hidden">
+                <div class="p-4 bg-slate-900/50 border-b border-slate-800 flex justify-between items-center">
+                    <h3 class="font-bold text-white text-base flex items-center gap-2">
+                        <i class="fa-solid fa-list text-tech-400"></i> Elenco Obiettivi Registrati
+                    </h3>
+                    <span id="obiettivi-count-badge" class="text-xs bg-tech-500/10 text-tech-400 font-bold px-3 py-1 rounded-full border border-tech-500/30">0 Registrati</span>
+                </div>
+                <div id="container-obiettivi-list" class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Popolato dinamicamente -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: CHECKLIST MEZZO -->
+        <section id="section-checklist" class="space-y-6 hidden">
+            <div class="bg-darknavy-900 p-6 rounded-2xl border border-slate-800 shadow-md">
+                <h2 class="text-xl font-bold text-white mb-1 flex items-center gap-2">
+                    <i class="fa-solid fa-car text-tech-400"></i> Checklist & Stato Veicolo Operativo
+                </h2>
+                <p class="text-xs text-slate-400 mb-6">Compila la verifica dello stato del mezzo prima dell'inizio delle attività di pattugliamento.</p>
+
+                <form id="form-checklist" onsubmit="salvaChecklistMezzo(event)" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Targa Veicolo</label>
+                            <input type="text" id="chk-targa" value="GA 123 FX" required class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Km Inizio Turno</label>
+                            <input type="number" id="chk-km" value="142500" required class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Livello Carburante</label>
+                            <select id="chk-carburante" class="w-full bg-slate-950 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm">
+                                <option value="100%">Pieno (100%)</option>
+                                <option value="75%">3/4 (75%)</option>
+                                <option value="50%">Metà (50%)</option>
+                                <option value="25%">Riserva (25%)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-2">
+                        <label class="flex items-center gap-2 bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs font-medium cursor-pointer">
+                            <input type="checkbox" id="chk-fari" checked class="rounded text-tech-500 focus:ring-tech-500"> Luci & Fari Funzionanti
+                        </label>
+                        <label class="flex items-center gap-2 bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs font-medium cursor-pointer">
+                            <input type="checkbox" id="chk-pneumatici" checked class="rounded text-tech-500 focus:ring-tech-500"> Pressione Pneumatici
+                        </label>
+                        <label class="flex items-center gap-2 bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs font-medium cursor-pointer">
+                            <input type="checkbox" id="chk-estintore" checked class="rounded text-tech-500 focus:ring-tech-500"> Estintore Presente
+                        </label>
+                        <label class="flex items-center gap-2 bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs font-medium cursor-pointer">
+                            <input type="checkbox" id="chk-torcia" checked class="rounded text-tech-500 focus:ring-tech-500"> Torcia Elettrica OK
+                        </label>
+                    </div>
+
+                    <div class="flex justify-end pt-2">
+                        <button type="submit" class="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-sm rounded-xl transition flex items-center gap-2">
+                            <i class="fa-solid fa-check"></i> CONFERMA CHECKLIST MEZZO
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- SECTION 4: REPORT & EXPORT -->
+        <section id="section-report" class="space-y-6 hidden">
+            <div class="bg-darknavy-900 p-6 rounded-2xl border border-slate-800 shadow-md">
+                <h2 class="text-xl font-bold text-white mb-1 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie text-tech-400"></i> Report & Esportazione Turno
+                </h2>
+                <p class="text-xs text-slate-400 mb-6">Genera ed esporta il documento PDF di sintesi del servizio di vigilanza, pronto per l'archiviazione o l'invio alla Centrale Operativa.</p>
+
+                <div class="flex flex-wrap gap-4">
+                    <button onclick="esportaPDFReport()" class="px-6 py-3 bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-sm rounded-xl shadow-lg transition flex items-center gap-2">
+                        <i class="fa-solid fa-file-pdf text-lg"></i> ESPORTA REPORT SERVIZIO PDF
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Stato Applicazione
+        let statoApp = {
+            obiettivi: [
+                { id: '1', nome: 'Banca Sella - Filiale Centro', indirizzo: 'Via Roma 45', passaggiRichiesti: 3, note: 'Tastiera allarme codice #1234' },
+                { id: '2', nome: 'Supermercato Conad', indirizzo: 'Via Milano 12', passaggiRichiesti: 2, note: 'Verificare porte posteriori ditta scarico' },
+                { id: '3', nome: 'Zona Industriale Lotto 3', indirizzo: 'Via Delle Industrie 88', passaggiRichiesti: 1, note: 'Giro perimetrale completo con fari' }
+            ],
+            ispezioni: [],
+            checklistMezzo: {
+                targa: 'GA 123 FX',
+                km: 142500,
+                carburante: '100%',
+                verificato: true
+            }
+        };
+
+        // Inizializzazione DOM
+        document.addEventListener('DOMContentLoaded', () => {
+            caricaDatiLocali();
+            aggiornaOrologio();
+            setInterval(aggiornaOrologio, 1000);
+            setOraAttuale();
+            renderTutto();
+            switchTab('servizio'); // Imposta la tab attiva iniziale con evidenziazione
+        });
+
+        function caricaDatiLocali() {
+            const dati = localStorage.getItem('sogv_data_v3');
+            if (dati) {
+                try {
+                    statoApp = JSON.parse(dati);
+                } catch (e) {
+                    console.error('Errore nel caricamento dei dati locali', e);
+                }
+            }
+        }
+
+        function salvaDatiLocali() {
+            localStorage.setItem('sogv_data_v3', JSON.stringify(statoApp));
+        }
+
+        function aggiornaOrologio() {
+            const now = new Date();
+            document.getElementById('live-clock').innerText = now.toLocaleTimeString('it-IT');
+        }
+
+        function setOraAttuale() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('ispezione-ora').value = `${hours}:${minutes}`;
+        }
+
+        // Funzione Gestione Tab con Evidenziazione Grafica
+        function switchTab(tabId) {
+            const tabs = ['servizio', 'obiettivi', 'checklist', 'report'];
+
+            tabs.forEach(id => {
+                // Nascondi tutte le sezioni
+                const sec = document.getElementById(`section-${id}`);
+                if (sec) sec.classList.add('hidden');
+
+                // Resetta stile Desktop Nav
+                const btnDesktop = document.getElementById(`tab-btn-${id}`);
+                if (btnDesktop) {
+                    btnDesktop.className = "nav-tab px-4 py-2 text-sm font-semibold rounded-lg flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800 transition-all";
+                }
+
+                // Resetta stile Mobile Nav
+                const btnMobile = document.getElementById(`mobile-btn-${id}`);
+                if (btnMobile) {
+                    btnMobile.className = "flex flex-col items-center py-1 px-3 text-slate-400 font-medium";
+                }
+            });
+
+            // Mostra la Sezione Selezionata
+            const activeSection = document.getElementById(`section-${tabId}`);
+            if (activeSection) activeSection.classList.remove('hidden');
+
+            // Evidenzia Pulsante Desktop Attivo
+            const activeDesktopBtn = document.getElementById(`tab-btn-${tabId}`);
+            if (activeDesktopBtn) {
+                activeDesktopBtn.className = "nav-tab px-4 py-2 text-sm font-semibold rounded-lg flex items-center gap-2 transition-all bg-tech-600 text-white shadow-sm tech-glow font-bold";
+            }
+
+            // Evidenzia Pulsante Mobile Attivo
+            const activeMobileBtn = document.getElementById(`mobile-btn-${tabId}`);
+            if (activeMobileBtn) {
+                activeMobileBtn.className = "flex flex-col items-center py-1 px-3 text-tech-400 font-bold";
+            }
+        }
+
+        function getPassaggiEffettuatiObiettivo(objId) {
+            return statoApp.ispezioni.filter(i => i.obiettivoId === objId).length;
+        }
+
+        function renderTutto() {
+            renderSelectObiettivi();
+            renderDashboardPassaggi();
+            renderObiettiviList();
+            renderIspezioniTable();
+            aggiornaContatori();
+        }
+
+        // Render Dashboard Passaggi con Linea Verde
+        function renderDashboardPassaggi() {
+            const container = document.getElementById('grid-passaggi-obiettivi');
+            container.innerHTML = '';
+
+            let passaggiTotaliRichiesti = 0;
+            let passaggiTotaliEseguiti = 0;
+
+            statoApp.obiettivi.forEach(obj => {
+                const eseguiti = getPassaggiEffettuatiObiettivo(obj.id);
+                const richiesti = parseInt(obj.passaggiRichiesti) || 1;
+
+                passaggiTotaliRichiesti += richiesti;
+                passaggiTotaliEseguiti += Math.min(eseguiti, richiesti);
+
+                const completato = eseguiti >= richiesti;
+                const percentuale = Math.min(100, Math.round((eseguiti / richiesti) * 100));
+
+                const card = document.createElement('div');
+                card.className = `p-3.5 rounded-xl border text-xs flex flex-col justify-between ${completato ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-slate-950 border-slate-800'}`;
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="font-bold text-white text-sm truncate pr-2">${obj.nome}</span>
+                        <span class="px-2 py-0.5 rounded-full text-xs font-bold ${completato ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-300'}">
+                            ${eseguiti}/${richiesti} ${completato ? '<i class="fa-solid fa-check ml-1 text-emerald-400"></i>' : ''}
+                        </span>
+                    </div>
+                    <!-- Linea di Avanzamento Verde -->
+                    <div class="w-full bg-slate-800 rounded-full h-2 mb-1 overflow-hidden">
+                        <div class="h-2 rounded-full ${completato ? 'bg-emerald-400' : 'bg-emerald-500'}" style="width: ${percentuale}%"></div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            document.getElementById('passaggi-totali-badge').innerText = `${passaggiTotaliEseguiti}/${passaggiTotaliRichiesti} Svolti`;
+        }
+
+        function renderSelectObiettivi() {
+            const select = document.getElementById('ispezione-obiettivo');
+            select.innerHTML = '<option value="">-- Seleziona Obiettivo --</option>';
+
+            statoApp.obiettivi.forEach(obj => {
+                const eseguiti = getPassaggiEffettuatiObiettivo(obj.id);
+                const opt = document.createElement('option');
+                opt.value = obj.id;
+                opt.innerText = `${obj.nome} (${eseguiti}/${obj.passaggiRichiesti} passaggi)`;
+                select.appendChild(opt);
+            });
+        }
+
+        function aggiornaDettagliObiettivoSelezionato() {
+            const objId = document.getElementById('ispezione-obiettivo').value;
+            const box = document.getElementById('box-info-obiettivo');
+            if (!objId) {
+                box.classList.add('hidden');
+                return;
+            }
+            const obj = statoApp.obiettivi.find(o => o.id === objId);
+            if (obj) {
+                const eseguiti = getPassaggiEffettuatiObiettivo(obj.id);
+                document.getElementById('info-obj-nome').innerText = obj.nome;
+                document.getElementById('info-obj-indirizzo').innerText = obj.indirizzo;
+                document.getElementById('info-obj-note').innerText = obj.note || 'Nessuna nota presente';
+                document.getElementById('info-obj-passaggi-status').innerText = `Passaggio ${eseguiti + 1} di ${obj.passaggiRichiesti}`;
+                box.classList.remove('hidden');
+            }
+        }
+
+        function setEsitoPreset(titolo, testo) {
+            document.getElementById('ispezione-note').value = `[${titolo}] ${testo}`;
+        }
+
+        function salvaIspezione(e) {
+            e.preventDefault();
+            const objId = document.getElementById('ispezione-obiettivo').value;
+            const ora = document.getElementById('ispezione-ora').value;
+            const note = document.getElementById('ispezione-note').value;
+
+            const obj = statoApp.obiettivi.find(o => o.id === objId);
+            const passaggiEseguiti = getPassaggiEffettuatiObiettivo(objId) + 1;
+
+            const nuovaIspezione = {
+                id: Date.now().toString(),
+                obiettivoId: objId,
+                nomeObiettivo: obj ? obj.nome : 'N/A',
+                indirizzo: obj ? obj.indirizzo : '',
+                ora: ora,
+                note: note,
+                numeroPassaggio: passaggiEseguiti,
+                isAnomalia: note.toUpperCase().includes('ANOMALIA') || note.toUpperCase().includes('ALLARME')
+            };
+
+            statoApp.ispezioni.unshift(nuovaIspezione);
+            salvaDatiLocali();
+            renderTutto();
+
+            document.getElementById('form-ispezione').reset();
+            document.getElementById('box-info-obiettivo').classList.add('hidden');
+            setOraAttuale();
+        }
+
+        function eliminaIspezione(id) {
+            if (confirm('Sei sicuro di voler eliminare questo passaggio dal registro?')) {
+                statoApp.ispezioni = statoApp.ispezioni.filter(i => i.id !== id);
+                salvaDatiLocali();
+                renderTutto();
+            }
+        }
+
+        function renderIspezioniTable() {
+            const tbody = document.getElementById('tbody-ispezioni');
+            tbody.innerHTML = '';
+
+            if (statoApp.ispezioni.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="p-8 text-center text-slate-500 italic">
+                            Nessun passaggio registrato per il turno corrente.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            statoApp.ispezioni.forEach(isp => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-900/60 transition";
+                tr.innerHTML = `
+                    <td class="p-3.5 font-mono text-tech-400 font-bold">${isp.ora}</td>
+                    <td class="p-3.5">
+                        <div class="font-bold text-white">${isp.nomeObiettivo}</div>
+                        <div class="text-xs text-slate-400">${isp.indirizzo}</div>
+                    </td>
+                    <td class="p-3.5">
+                        <span class="px-2 py-1 rounded bg-slate-800 text-slate-300 font-bold text-xs border border-slate-700">
+                            Passaggio #${isp.numeroPassaggio}
+                        </span>
+                    </td>
+                    <td class="p-3.5">
+                        <div class="flex items-center gap-2">
+                            ${isp.isAnomalia ?
+                                `<span class="px-2 py-0.5 rounded text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">ANOMALIA</span>` :
+                                `<span class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">OK</span>`}
+                            <span class="text-xs text-slate-300">${isp.note}</span>
+                        </div>
+                    </td>
+                    <td class="p-3.5 text-right">
+                        <button onclick="eliminaIspezione('${isp.id}')" class="text-slate-500 hover:text-rose-400 transition" title="Elimina">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Anagrafica Obiettivi Functions
+        function salvaObiettivo(e) {
+            e.preventDefault();
+            const editId = document.getElementById('obj-id-edit').value;
+            const nome = document.getElementById('obj-nome').value;
+            const indirizzo = document.getElementById('obj-indirizzo').value;
+            const passaggi = parseInt(document.getElementById('obj-passaggi').value) || 1;
+            const note = document.getElementById('obj-note').value;
+
+            if (editId) {
+                const obj = statoApp.obiettivi.find(o => o.id === editId);
+                if (obj) {
+                    obj.nome = nome;
+                    obj.indirizzo = indirizzo;
+                    obj.passaggiRichiesti = passaggi;
+                    obj.note = note;
+                }
+            } else {
+                statoApp.obiettivi.push({
+                    id: Date.now().toString(),
+                    nome: nome,
+                    indirizzo: indirizzo,
+                    passaggiRichiesti: passaggi,
+                    note: note
+                });
+            }
+
+            salvaDatiLocali();
+            resetFormObiettivo();
+            renderTutto();
+        }
+
+        function modificaObiettivo(id) {
+            const obj = statoApp.obiettivi.find(o => o.id === id);
+            if (!obj) return;
+
+            document.getElementById('obj-id-edit').value = obj.id;
+            document.getElementById('obj-nome').value = obj.nome;
+            document.getElementById('obj-indirizzo').value = obj.indirizzo;
+            document.getElementById('obj-passaggi').value = obj.passaggiRichiesti;
+            document.getElementById('obj-note').value = obj.note || '';
+
+            document.getElementById('form-obiettivi-title').innerHTML = '<i class="fa-solid fa-pen-to-square text-tech-400"></i> Modifica Obiettivo';
+            document.getElementById('btn-submit-obiettivo').innerHTML = '<i class="fa-solid fa-check"></i> AGGIORNA OBIETTIVO';
+            document.getElementById('btn-annulla-modifica-obj').classList.remove('hidden');
+        }
+
+        function eliminaObiettivo(id) {
+            if (confirm('Eliminare questo obiettivo dall anagrafica?')) {
+                statoApp.obiettivi = statoApp.obiettivi.filter(o => o.id !== id);
+                salvaDatiLocali();
+                renderTutto();
+            }
+        }
+
+        function resetFormObiettivo() {
+            document.getElementById('form-obiettivo').reset();
+            document.getElementById('obj-id-edit').value = '';
+            document.getElementById('form-obiettivi-title').innerHTML = '<i class="fa-solid fa-plus-circle text-tech-400"></i> Aggiungi Nuovo Obiettivo';
+            document.getElementById('btn-submit-obiettivo').innerHTML = '<i class="fa-solid fa-plus"></i> AGGIUNGI OBIETTIVO';
+            document.getElementById('btn-annulla-modifica-obj').classList.add('hidden');
+        }
+
+        function renderObiettiviList() {
+            const container = document.getElementById('container-obiettivi-list');
+            container.innerHTML = '';
+
+            statoApp.obiettivi.forEach(obj => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col justify-between";
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-1">
+                            <h4 class="font-bold text-white text-sm">${obj.nome}</h4>
+                            <span class="text-xs bg-slate-800 text-tech-400 px-2 py-0.5 rounded font-bold border border-slate-700">
+                                ${obj.passaggiRichiesti} pass/turno
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400 mb-2">${obj.indirizzo}</p>
+                        ${obj.note ? `<p class="text-xs text-slate-400 italic bg-slate-900 p-2 rounded border border-slate-800/80 mb-3">${obj.note}</p>` : ''}
+                    </div>
+                    <div class="flex justify-end gap-2 pt-2 border-t border-slate-800/50">
+                        <button onclick="modificaObiettivo('${obj.id}')" class="text-xs text-tech-400 hover:text-white font-bold px-2 py-1 rounded bg-slate-900 border border-slate-800">Modifica</button>
+                        <button onclick="eliminaObiettivo('${obj.id}')" class="text-xs text-rose-400 hover:text-rose-300 font-bold px-2 py-1 rounded bg-slate-900 border border-slate-800">Elimina</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            document.getElementById('obiettivi-count-badge').innerText = `${statoApp.obiettivi.length} Registrati`;
+        }
+
+        function salvaChecklistMezzo(e) {
+            e.preventDefault();
+            statoApp.checklistMezzo = {
+                targa: document.getElementById('chk-targa').value,
+                km: document.getElementById('chk-km').value,
+                carburante: document.getElementById('chk-carburante').value,
+                verificato: true
+            };
+            salvaDatiLocali();
+            alert('Checklist veicolo registrata correttamente!');
+        }
+
+        function aggiornaContatori() {
+            const totIspezioni = statoApp.ispezioni.length;
+            const totAnomalie = statoApp.ispezioni.filter(i => i.isAnomalia).length;
+
+            document.getElementById('card-tot-ispezioni').innerText = totIspezioni;
+            document.getElementById('card-tot-anomalie').innerText = totAnomalie;
+            document.getElementById('ispezioni-count-badge').innerText = `${totIspezioni} Registrazioni`;
+        }
+
+        // ESPORTAZIONE REPORT PDF (jsPDF + autoTable)
+        function esportaPDFReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const dateStr = new Date().toLocaleDateString('it-IT');
+            const timeStr = new Date().toLocaleTimeString('it-IT');
+
+            // Intestazione PDF
+            doc.setFillColor(15, 23, 42); // Navy Dark
+            doc.rect(0, 0, 210, 30, 'F');
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'bold');
+            doc.text('S.O.G.V. - REGISTRO OPERATIVO DI VIGILANZA', 14, 18);
+
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(14, 165, 233);
+            doc.text(`Data Report: ${dateStr} - Ora: ${timeStr}`, 14, 25);
+
+            // Dettagli Turno
+            doc.setTextColor(15, 23, 42);
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'bold');
+            doc.text('RIEPILOGO TURNO E UNITA OPERATIVA', 14, 40);
+
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Pattuglia: Pattuglia Alfa 01 | Operatore: G.P.G. M. Rossi`, 14, 46);
+            doc.text(`Veicolo Targa: ${statoApp.checklistMezzo.targa} | Km Inizio: ${statoApp.checklistMezzo.km} | Carburante: ${statoApp.checklistMezzo.carburante}`, 14, 51);
+
+            // Tabella Anagrafica e Stato Passaggi
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'bold');
+            doc.text('STATO PASSAGGI PER OBIETTIVO', 14, 63);
+
+            const dataObiettivi = statoApp.obiettivi.map(o => {
+                const eseguiti = getPassaggiEffettuatiObiettivo(o.id);
+                return [o.nome, o.indirizzo, `${eseguiti} / ${o.passaggiRichiesti}`, eseguiti >= o.passaggiRichiesti ? 'COMPLETATO' : 'INCOMPLETE'];
+            });
+
+            doc.autoTable({
+                startY: 68,
+                head: [['Obiettivo / Cliente', 'Indirizzo', 'Passaggi', 'Stato']],
+                body: dataObiettivi,
+                theme: 'striped',
+                headStyles: { fillStyle: 'F', fillColor: [2, 132, 199], textColor: [255, 255, 255], fontStyle: 'bold' }
+            });
+
+            // Tabella Registro Passaggi
+            const startYRegistro = doc.lastAutoTable.finalY + 12;
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'bold');
+            doc.text('REGISTRO DETTAGLIATO ISPEZIONI E NOTE OPERATIVE', 14, startYRegistro);
+
+            const dataIspezioni = statoApp.ispezioni.map(i => [
+                i.ora,
+                i.nomeObiettivo,
+                `Pass. #${i.numeroPassaggio}`,
+                i.isAnomalia ? 'ANOMALIA' : 'REGOLARE',
+                i.note
+            ]);
+
+            doc.autoTable({
+                startY: startYRegistro + 5,
+                head: [['Ora', 'Obiettivo', 'Passaggio', 'Esito', 'Note Operative']],
+                body: dataIspezioni.length > 0 ? dataIspezioni : [['-', '-', '-', '-', 'Nessuna ispezione registrata']],
+                theme: 'grid',
+                headStyles: { fillStyle: 'F', fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold' },
+                columnStyles: {
+                    0: { cellWidth: 20 },
+                    1: { cellWidth: 50 },
+                    2: { cellWidth: 25 },
+                    3: { cellWidth: 25 },
+                    4: { cellWidth: 'auto' }
+                }
+            });
+
+            // Piè di Pagina
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(100);
+                doc.text(`S.O.G.V. v3.0 Tech - Pagina ${i} di ${pageCount}`, 14, 288);
+            }
+
+            doc.save(`SOGV_Report_Servizio_${dateStr.replace(/\//g, '-')}.pdf`);
+        }
+    </script>
+</body>
+</html>
